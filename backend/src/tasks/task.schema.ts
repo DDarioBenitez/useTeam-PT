@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Column {
+export class Task {
   _id: string;
 
   @Prop({ required: true })
@@ -10,7 +10,13 @@ export class Column {
 
   @Prop({ required: true, index: true })
   index: number;
+
+  @Prop({ required: true })
+  columnId: string;
+
+  @Prop()
+  description?: string;
 }
 
-export type ColumnDocument = HydratedDocument<Column>;
-export const ColumnSchema = SchemaFactory.createForClass(Column);
+export type TaskDocument = HydratedDocument<Task>;
+export const TaskSchema = SchemaFactory.createForClass(Task);
