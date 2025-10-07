@@ -1,6 +1,9 @@
 import { IsString, IsOptional, IsNumber } from 'class-validator';
 
-export class CreateColumnDTO {
+export class CreateColumnWSDTO {
+  @IsString()
+  _id?: string;
+
   @IsString()
   title: string;
 

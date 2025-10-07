@@ -20,4 +20,12 @@ export class CreateTaskDTO {
 
   @IsString()
   tag: string;
+
+  @IsString()
+  @IsOptional()
+  opId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  clientTs?: number;
 }

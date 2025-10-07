@@ -143,6 +143,7 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
 
             <div className="shrink-0 p-3 pt-0">
                 <button
+                    onClick={() => setIsModalOpen(true)}
                     className={`w-full rounded-full px-4 py-2 font-medium text-white
                         bg-${column.color} hover:bg-${column.color}/80`}
                 >
@@ -154,7 +155,6 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
                 <CreateTaskModal
                     onClose={() => setIsModalOpen(false)}
                     onSubmit={(input) => {
-                        // 👇 delegar creación al Board
                         onCreateTask?.(column._id, input);
                     }}
                 />

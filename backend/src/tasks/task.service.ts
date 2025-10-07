@@ -1,14 +1,18 @@
 // src/tasks/task.service.ts
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Task } from './task.schema';
 import { ClientSession, Model } from 'mongoose';
 import { CreateTaskDTO } from './dtos/createTaskDTO';
 import { MoveTaskDTO } from './dtos/moveTaskDTO';
+import { WSGateway } from 'src/ws/ws.gateway';
 
 @Injectable()
 export class TaskService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<Task>) {}
+  constructor(
+    @InjectModel(Task.name) private taskModel: Model<Task>,
+    @Inject(WSGateway) private wsGateway: WSGateway,
+  ) {}
 
   listByColumn(columnId: string) {
     return this.taskModel.find({ columnId }).sort({ index: 1 }).lean();
@@ -30,7 +34,7 @@ export class TaskService {
       await this.taskModel.create([{ ...dto, index }], { session });
     });
     await session.endSession();
-
+    this.wsGateway.taskCreated({ ...dto, index });
     return this.taskModel.findOne({ columnId: dto.columnId, index }).lean();
   }
 
@@ -53,6 +57,7 @@ export class TaskService {
       );
 
       await session.commitTransaction();
+      this.wsGateway.taskDeleted({ taskId, opId: '', clientTs: Date.now() });
       return { ok: true };
     } catch (e) {
       await session.abortTransaction();
@@ -67,7 +72,7 @@ export class TaskService {
     const BUMP = 100000; // offset grande, fuera de cualquier índice real
 
     try {
-      await session.startTransaction();
+      session.startTransaction();
 
       const task = await this.taskModel.findById(dto.taskId).session(session);
       if (!task) throw new Error('Task not found');
@@ -91,6 +96,13 @@ export class TaskService {
       // 0) Si no hay cambio efectivo, devolvé tal cual
       if (fromColumnId === dto.toColumnId && fromIndex === to) {
         await session.commitTransaction();
+        this.wsGateway.taskMove({
+          taskId: dto.taskId,
+          toColumnId: dto.toColumnId,
+          toIndex: to,
+          opId: dto.opId,
+          clientTs: dto.clientTs,
+        });
         return task.toObject();
       }
 
@@ -169,7 +181,13 @@ export class TaskService {
       }
 
       await session.commitTransaction();
-
+      this.wsGateway.taskMove({
+        taskId: dto.taskId,
+        toColumnId: dto.toColumnId,
+        toIndex: to,
+        opId: dto.opId,
+        clientTs: dto.clientTs,
+      });
       const updated = await this.taskModel.findById(task._id).lean();
       return updated!;
     } catch (e) {

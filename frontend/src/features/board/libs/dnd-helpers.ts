@@ -1,48 +1,10 @@
-// import type { ColumnModel, TaskModel } from "../../../types/types";
-
-// export function reindex<T extends { index: number }>(arr: T[]): T[] {
-//     return arr
-//         .slice()
-//         .sort((a, b) => a.index - b.index)
-//         .map((item, index) => ({ ...item, index: index }));
-// }
-
-// export function moveColumnLocal(cols: ColumnModel[], columnId: string, toIndex: number) {
-//     const list = cols.map((col) => ({ ...col }));
-//     const from = list.findIndex((col) => col._id === columnId);
-//     if (from < 0) return cols;
-//     const [col] = list.splice(from, 1);
-//     const index = Math.max(0, Math.min(toIndex, list.length));
-//     list.splice(index, 0, { ...col, index: index });
-//     return reindex(list);
-// }
-
-// export function moveTaskLocal(tasks: TaskModel[], taskId: string, toColumnId: string, toIndex: number) {
-//     const next = tasks.map((task) => ({ ...task }));
-//     const fromTask = next.find((task) => task._id === taskId);
-//     if (!fromTask) return tasks;
-
-//     let origin = next.filter((task) => task.columnId === fromTask.columnId && task._id !== taskId);
-//     origin = reindex(origin);
-
-//     let dest = next.filter((task) => task.columnId === toColumnId);
-//     const insertAt = Math.max(0, Math.min(toIndex, dest.length));
-//     const moved = { ...fromTask, columId: toColumnId, index: insertAt };
-//     dest.splice(insertAt, 0, moved);
-//     dest = reindex(dest);
-
-//     const others = next.filter((task) => task.columnId !== fromTask.columnId && task.columnId !== toColumnId);
-
-//     return [...others, ...origin, ...dest];
-// }
-
-// Reindex correcto: respeta el orden actual del array
+// Reordenar un array de objetos con propiedad 'index' para que queden 0..N respectando orden original
 export function reindex<T extends { index: number }>(arr: T[]): T[] {
     return arr.map((it, i) => ({ ...it, index: i }));
 }
 
-/* ---- Columnas ---- */
-// dnd-helpers.ts
+//Columns
+
 export function moveColumnLocal<C extends { _id: string; index: number }>(
     cols: C[],
     columnId: string,
@@ -65,7 +27,15 @@ export function moveColumnLocal<C extends { _id: string; index: number }>(
     return list.map((c, i) => ({ ...c, index: i }));
 }
 
-/* ---- Tasks ---- */
+export function createColumnLocal<C extends { _id: string; title: string; color: string; index: number }>(cols: C[], newCol: C): C[] {
+    return [...cols, newCol];
+}
+
+export function deleteColumnLocal<C extends { _id: string }>(cols: C[], columnId: string): C[] {
+    return cols.filter((c) => c._id !== columnId);
+}
+
+// Tasks
 export function moveTaskLocal<T extends { _id: string; columnId: string; index: number }>(
     tasks: T[],
     taskId: string,
@@ -127,4 +97,14 @@ export function moveTaskLocal<T extends { _id: string; columnId: string; index: 
     });
 
     return result;
+}
+
+export function createTaskLocal<T extends { _id: string; columnId: string; index: number }>(tasks: T[], newTask: T): T[] {
+    const list = tasks.map((t) => ({ ...t }));
+    list.push(newTask);
+    return list;
+}
+
+export function deleteTaskLocal<T extends { _id: string }>(tasks: T[], taskId: string): T[] {
+    return tasks.filter((t) => t._id !== taskId);
 }

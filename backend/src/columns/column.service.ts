@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Task } from 'src/tasks/task.schema';
 import { CreateColumnDTO } from './dtos/createColumnDTO';
 import { MoveColumnDTO } from './dtos/moveColumnDTO';
 import { Column } from './column.schema';
+import { WSGateway } from 'src/ws/ws.gateway';
 
 @Injectable()
 export class ColumnService {
   constructor(
     @InjectModel(Column.name) private colModel: Model<Column>,
     @InjectModel(Task.name) private taskModel: Model<Task>,
+    @Inject(WSGateway) private wsGateway: WSGateway,
   ) {}
 
   async list() {
@@ -33,7 +35,15 @@ export class ColumnService {
       );
     });
     session.endSession();
-    return this.colModel.findOne({ index }).lean();
+
+    const col = await this.colModel.findOne({ index }).lean();
+    this.wsGateway.columnCreated({
+      ...dto,
+      index,
+      clientTs: dto.clientTs,
+      opId: dto.opId,
+      _id: col?._id.toString() || '',
+    });
   }
 
   async remove(columnId: string) {
@@ -53,6 +63,11 @@ export class ColumnService {
         { session },
       );
       await session.commitTransaction();
+      this.wsGateway.columnDeleted({
+        columnId,
+        opId: '',
+        clientTs: Date.now(),
+      });
       return { ok: true };
     } catch (error) {
       await session.abortTransaction();
@@ -78,6 +93,12 @@ export class ColumnService {
       const to = Math.max(0, Math.min(dto.toIndex, max - 1));
       if (from === to) {
         await session.commitTransaction();
+        this.wsGateway.columnMove({
+          columnId: dto.columnId,
+          opId: dto.opId,
+          clientTs: dto.clientTs,
+          toIndex: to,
+        });
         return column;
       }
 
@@ -98,6 +119,12 @@ export class ColumnService {
       column.index = to;
       await column.save({ session });
       await session.commitTransaction();
+      this.wsGateway.columnMove({
+        columnId: dto.columnId,
+        opId: dto.opId,
+        clientTs: dto.clientTs,
+        toIndex: to,
+      });
       return column;
     } catch (error) {
       await session.abortTransaction();

@@ -7,6 +7,7 @@ import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ColumnModule } from './columns/column.module';
 import { TaskModule } from './tasks/task.module';
+import { WSModule } from './ws/ws.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TaskModule } from './tasks/task.module';
     // AuthModule,
     ColumnModule,
     TaskModule,
+    WSModule,
   ],
   controllers: [AppController],
   providers: [AppService],

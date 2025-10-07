@@ -1,11 +1,14 @@
 import { io, Socket } from "socket.io-client";
-import { EVENTS } from "@/../../../shared/events";
+import { EVENTS } from "../shared/events";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:3000";
+// 👉 tu namespace es "boards"  => cliente va a "/boards"
+const WS_URL = (import.meta as any).env?.VITE_WS_URL || "http://localhost:3000/boards";
+console.log("[WS] connecting to:", WS_URL);
 
 export const socket: Socket = io(WS_URL, {
     autoConnect: false,
     transports: ["websocket"],
+    withCredentials: false,
 });
 
 type Pending = { event: string; payload: any; ack?: (response: any) => void };
@@ -17,25 +20,12 @@ socket.on("connect", () => {
         if (ack) socket.emit(event, payload, ack);
         else socket.emit(event, payload);
     }
+    console.log("[WS] connected!", socket.id);
 });
 
-export function connectToBoard(boardId: string) {
+export function connectToBoard() {
     if (!socket.connected) socket.connect();
-    socket.emit(EVENTS.BOARD_JOIN, { boardId });
-}
-
-export function emitWithAck<T = any>(event: string, payload: any, timeoutMs = 5000) {
-    return new Promise<T>((resolve, reject) => {
-        if (!socket.connected) {
-            pending.push({ event, payload, ack: resolve });
-            return;
-        }
-
-        socket.timeout(timeoutMs).emit(event, payload, (err: unknown, res: T) => {
-            if (err) return reject(err);
-            resolve(res);
-        });
-    });
+    socket.emit(EVENTS.BOARD_JOIN, {});
 }
 
 export const on = socket.on.bind(socket);

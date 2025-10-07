@@ -9,7 +9,7 @@ export async function createTask(dto: TaskModel) {
     return await fetcher(`/tasks`, "POST", dto);
 }
 
-export async function moveTask(dto: { taskId: string; toIndex: number; toColumnId: string }) {
+export async function moveTask(dto: { taskId: string; toIndex: number; toColumnId: string; opId?: string; clientTs?: number }) {
     return await fetcher("/tasks/move", "PATCH", dto);
 }
 

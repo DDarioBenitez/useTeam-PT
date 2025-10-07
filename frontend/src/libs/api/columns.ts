@@ -9,7 +9,7 @@ export async function createColumn(dto: ColumnModel) {
     return await fetcher("/columns", "POST", dto);
 }
 
-export async function moveColumn(dto: { columnId: string; toIndex: number }) {
+export async function moveColumn(dto: { columnId: string; toIndex: number; opId?: string; clientTs?: number }) {
     return await fetcher("/columns/move", "PATCH", dto);
 }
 
