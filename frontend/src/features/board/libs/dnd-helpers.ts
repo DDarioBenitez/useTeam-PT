@@ -9,7 +9,7 @@
 
 // export function moveColumnLocal(cols: ColumnModel[], columnId: string, toIndex: number) {
 //     const list = cols.map((col) => ({ ...col }));
-//     const from = list.findIndex((col) => col.id === columnId);
+//     const from = list.findIndex((col) => col._id === columnId);
 //     if (from < 0) return cols;
 //     const [col] = list.splice(from, 1);
 //     const index = Math.max(0, Math.min(toIndex, list.length));
@@ -19,10 +19,10 @@
 
 // export function moveTaskLocal(tasks: TaskModel[], taskId: string, toColumnId: string, toIndex: number) {
 //     const next = tasks.map((task) => ({ ...task }));
-//     const fromTask = next.find((task) => task.id === taskId);
+//     const fromTask = next.find((task) => task._id === taskId);
 //     if (!fromTask) return tasks;
 
-//     let origin = next.filter((task) => task.columnId === fromTask.columnId && task.id !== taskId);
+//     let origin = next.filter((task) => task.columnId === fromTask.columnId && task._id !== taskId);
 //     origin = reindex(origin);
 
 //     let dest = next.filter((task) => task.columnId === toColumnId);
@@ -36,27 +36,37 @@
 //     return [...others, ...origin, ...dest];
 // }
 
-// Reindex genérico
+// Reindex correcto: respeta el orden actual del array
 export function reindex<T extends { index: number }>(arr: T[]): T[] {
-    return arr
-        .slice()
-        .sort((a, b) => a.index - b.index)
-        .map((it, i) => ({ ...it, index: i }));
+    return arr.map((it, i) => ({ ...it, index: i }));
 }
 
 /* ---- Columnas ---- */
-export function moveColumnLocal<C extends { id: string; index: number }>(cols: C[], columnId: string, toIndex: number) {
+// dnd-helpers.ts
+export function moveColumnLocal<C extends { _id: string; index: number }>(
+    cols: C[],
+    columnId: string,
+    toIndex: number // <-- slot destino (0..N)
+) {
     const list = cols.map((c) => ({ ...c }));
-    const from = list.findIndex((c) => c.id === columnId);
+    const from = list.findIndex((c) => c._id === columnId);
     if (from < 0) return cols;
+
     const [col] = list.splice(from, 1);
-    const idx = Math.max(0, Math.min(toIndex, list.length));
-    list.splice(idx, 0, { ...col, index: idx });
-    return reindex(list);
+
+    // compensar si ibas hacia la derecha
+    let idx = toIndex;
+    if (from < toIndex) idx -= 1;
+
+    idx = Math.max(0, Math.min(idx, list.length));
+    list.splice(idx, 0, col);
+
+    // reindex sin ordenar
+    return list.map((c, i) => ({ ...c, index: i }));
 }
 
 /* ---- Tasks ---- */
-export function moveTaskLocal<T extends { id: string; columnId: string; index: number }>(
+export function moveTaskLocal<T extends { _id: string; columnId: string; index: number }>(
     tasks: T[],
     taskId: string,
     toColumnId: string,
@@ -66,7 +76,7 @@ export function moveTaskLocal<T extends { id: string; columnId: string; index: n
     const list = tasks.map((t) => ({ ...t }));
 
     // Ubicar y extraer la task original
-    const fromPos = list.findIndex((t) => t.id === taskId);
+    const fromPos = list.findIndex((t) => t._id === taskId);
     if (fromPos < 0) return tasks;
 
     const fromTask = list[fromPos];
@@ -111,8 +121,8 @@ export function moveTaskLocal<T extends { id: string; columnId: string; index: n
     // 🔒 Deduplicar por id (por si la lista venía “sucia” por drops previos)
     const seen = new Set<string>();
     result = result.filter((t) => {
-        if (seen.has(t.id)) return false;
-        seen.add(t.id);
+        if (seen.has(t._id)) return false;
+        seen.add(t._id);
         return true;
     });
 

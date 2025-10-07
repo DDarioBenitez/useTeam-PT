@@ -1,5 +1,5 @@
 interface ColumnModel {
-    id: string;
+    _id: string;
     title: string;
     color: string; // id del color (ej: "red")
     tasks?: TaskModel[];
@@ -7,7 +7,7 @@ interface ColumnModel {
 }
 
 interface TaskModel {
-    id: string;
+    _id: string;
     title: string;
     description?: string;
     columnId: string;

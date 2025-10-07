@@ -1,18 +1,8 @@
 import { useRef, useState } from "react";
 import Task from "../task/Task";
-import type { ColumnModel } from "../../../../types/types";
+import type { ColumnModel, TaskModel } from "../../../../types/types";
 import { Trash2 } from "lucide-react";
 import CreateTaskModal from "../task/modal/CreateTask";
-
-type TaskModel = {
-    id: string;
-    title: string;
-    description?: string;
-    columnId: string;
-    index: number;
-    color: string;
-    tag: string;
-};
 
 interface ColumnProps {
     column: ColumnModel;
@@ -20,14 +10,13 @@ interface ColumnProps {
     onDropTask: (taskId: string, fromColumnId: string, toColumnId: string, toIndex: number) => void;
     onDropColumn: (columnId: string, toIndex: number) => void;
     onDeleteColumn?: (columnId: string) => void;
-    // 👇 NUEVO
     onCreateTask?: (columnId: string, input: { title: string; description: string; tag: string; color: string }) => void;
     onDeleteTask?: (taskId: string) => void;
 }
 
 const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, onCreateTask, onDeleteTask }: ColumnProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [overColumn, setOverColumn] = useState(false);
+    const [, setOverColumn] = useState(false);
     const colRef = useRef<HTMLDivElement>(null);
 
     const handleDeleteColumn = (columnId: string) => {
@@ -36,39 +25,25 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
 
     // ——— DnD columnas (igual que ya lo tenías) ———
     const handleColumnDragOver = (e: React.DragEvent) => {
-        const raw = e.dataTransfer.getData("application/json");
-        if (!raw) return;
-        try {
-            const data = JSON.parse(raw);
-            if (data.type !== "column") return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-        } catch {}
+        e.preventDefault(); // <- SIEMPRE
+        e.dataTransfer.dropEffect = "move";
     };
 
     const handleColumnDrop = (e: React.DragEvent) => {
         const raw = e.dataTransfer.getData("application/json");
         if (!raw) return;
-        try {
-            const data = JSON.parse(raw);
-            if (data.type !== "column") return;
+        const data = JSON.parse(raw);
+        if (data.type !== "column") return;
 
-            const rect = colRef.current?.getBoundingClientRect();
-            if (!rect) return;
+        const rect = colRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const midX = rect.left + rect.width / 2;
 
-            const midX = rect.left + rect.width / 2;
-            const toIndex = e.clientX < midX ? column.index : column.index + 1;
+        // índice FINAL (no overIndex): before/after según mitad
+        const toIndex = e.clientX < midX ? column.index : column.index + 1;
 
-            console.log("[DROP COLUMN (whole wrapper)]", {
-                fromColumnId: data.columnId,
-                hoveredColumnId: column.id,
-                toIndex,
-            });
-
-            onDropColumn(data.columnId, toIndex);
-        } catch (err) {
-            console.warn("DROP COLUMN parse error", err);
-        }
+        console.log("[DROP COLUMN wrapper]", { from: data.fromIndex, toIndex, hovered: column.index });
+        onDropColumn(data.columnId, toIndex);
     };
 
     // ——— DnD tasks ———
@@ -85,13 +60,18 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
             }}
             onDrop={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 const raw = e.dataTransfer.getData("application/json");
                 if (!raw) return;
                 const data = JSON.parse(raw);
-                console.log("[DROP TASK-ZONE]", { pos, data, toColumnId: column.id });
+
+                if (data.type === "column") {
+                    // ⚠️ columna: NO detener propagación, dejá que suba al wrapper
+                    return; // sin stopPropagation()
+                }
+
                 if (data.type === "task") {
-                    onDropTask(data.taskId, data.fromColumnId, column.id, pos);
+                    e.stopPropagation(); // solo para tasks
+                    onDropTask(data.taskId, data.fromColumnId, column._id, pos);
                 }
             }}
             className="w-full"
@@ -100,13 +80,18 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
 
     const handleListDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        e.stopPropagation();
         const raw = e.dataTransfer.getData("application/json");
         if (!raw) return;
         const data = JSON.parse(raw);
-        console.log("[DROP LIST-CONTAINER]", { data, toColumnId: column.id, toIndex: tasks.length });
+
+        if (data.type === "column") {
+            // dejá que burbujee al wrapper
+            return; // sin stopPropagation()
+        }
+
         if (data.type === "task") {
-            onDropTask(data.taskId, data.fromColumnId, column.id, tasks.length); // usar props.tasks
+            e.stopPropagation(); // solo tasks
+            onDropTask(data.taskId, data.fromColumnId, column._id, tasks.length);
         }
     };
 
@@ -115,7 +100,7 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
             ref={colRef}
             onDragOver={handleColumnDragOver}
             onDrop={handleColumnDrop}
-            className={`relative w-[26rem] flex-shrink-0 flex flex-col rounded-lg shadow-md bg-${column.color}/10 h-[40rem]`}
+            className={`w-[26rem] flex-shrink-0 flex flex-col rounded-lg shadow-md bg-${column.color}/10 h-full overflow-hidden`}
             onDragEnter={() => setOverColumn(true)}
             onDragLeave={() => setOverColumn(false)}
         >
@@ -123,16 +108,16 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
             <div
                 draggable
                 onDragStart={(e) => {
-                    const payload = { type: "column", columnId: column.id, fromIndex: column.index };
+                    const payload = { type: "column", columnId: column._id, fromIndex: column.index };
                     console.log("[DRAGSTART COLUMN]", payload);
                     e.dataTransfer.setData("application/json", JSON.stringify(payload));
                     e.dataTransfer.effectAllowed = "move";
                 }}
-                className={`rounded-t-lg p-4 flex items-center justify-between bg-${column.color}/20`}
+                className={`shrink-0 p-4 flex items-center justify-between bg-${column.color}/20`}
             >
                 <h2 className={`text-lg font-semibold text-${column.color}`}>{column.title}</h2>
                 <span className="text-red-500 hover:text-red-600 p-1 rounded-full cursor-pointer hover:bg-red-100 ">
-                    <Trash2 className="cursor-pointer" onClick={() => handleDeleteColumn(column.id)} />
+                    <Trash2 className="cursor-pointer" onClick={() => handleDeleteColumn(column._id)} />
                 </span>
             </div>
 
@@ -140,14 +125,14 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
             <div className="flex-1 overflow-y-auto p-3 pb-24 space-y-3" onDragOver={handleDragOver} onDrop={handleListDrop}>
                 <TaskDropeZone pos={0} />
                 {(tasks ?? []).map((task, i) => (
-                    <div key={task.id}>
+                    <div key={task._id}>
                         <Task
                             title={task.title}
                             description={task.description}
                             color={task.color}
                             tag={task.tag}
-                            id={task.id}
-                            columnId={column.id}
+                            id={task._id}
+                            columnId={column._id}
                             index={task.index}
                             onDelete={onDeleteTask}
                         />
@@ -156,10 +141,10 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
                 ))}
             </div>
 
-            <div className="absolute left-3 right-3 bottom-3">
+            <div className="shrink-0 p-3 pt-0">
                 <button
-                    className={`w-full rounded-full px-4 py-2 font-medium text-white border border-gray-300 bg-${column.color} hover:bg-${column.color}/80 cursor-pointer`}
-                    onClick={() => setIsModalOpen(true)}
+                    className={`w-full rounded-full px-4 py-2 font-medium text-white
+                        bg-${column.color} hover:bg-${column.color}/80`}
                 >
                     + Add Task
                 </button>
@@ -170,7 +155,7 @@ const Column = ({ column, tasks = [], onDropTask, onDropColumn, onDeleteColumn, 
                     onClose={() => setIsModalOpen(false)}
                     onSubmit={(input) => {
                         // 👇 delegar creación al Board
-                        onCreateTask?.(column.id, input);
+                        onCreateTask?.(column._id, input);
                     }}
                 />
             )}
