@@ -108,7 +108,12 @@ Si quieres probar el flujo sin usar la interfaz, puedes usar curl para disparar 
 export BACKEND_URL=http://localhost:3000
 curl -X POST "$BACKEND_URL/export/backlog" \
 	-H 'Content-Type: application/json' \
-	-d '{"email":"tu@ejemplo.com","backendBaseUrl":"http://localhost:3000"}'
+	-d '{
+    "email":"reportes@acme.com",
+    "fields":["_id","title","description","column","createdAt"],
+    "columnName":"Backlog",
+    "backendBaseUrl":"http://127.0.0.1:3000"
+  }'
 ```
 
 Esto enviará la petición que normalmente hace el frontend; si todo está configurado (n8n webhook, n8n workflow importado y backend accesible), recibirás el email de prueba y la notificación websocket.
