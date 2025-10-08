@@ -112,7 +112,7 @@ curl -X POST "$BACKEND_URL/export/backlog" \
     "email":"reportes@acme.com",
     "fields":["_id","title","description","column","createdAt"],
     "columnName":"Backlog",
-    "backendBaseUrl":"http://127.0.0.1:3000"
+    "backendBaseUrl":"http://localhost:3000"
   }'
 ```
 
