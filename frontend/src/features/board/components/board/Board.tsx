@@ -91,7 +91,7 @@ export default function Board() {
             <div className="mb-6 shrink-0 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">useTeam Board</h1>
-                    <p className="text-gray-600">Drag & drop: columnas y tareas</p>
+                    <p className="text-gray-600">Drag & drop: columns and tasks</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}

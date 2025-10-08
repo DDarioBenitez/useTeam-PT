@@ -6,10 +6,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { EVENTS } from 'src/libs/events';
-import { CreateTaskDTO } from 'src/tasks/dtos/createTaskDTO';
-import { MoveTaskDTO } from 'src/tasks/dtos/moveTaskDTO';
-import { MoveColumnDTO } from 'src/columns/dtos/moveColumnDTO';
-import { CreateColumnWSDTO } from 'src/columns/dtos/createColumnWSDTO';
+import { CreateTaskDTO } from 'src/task/dtos/createTaskDTO';
+import { MoveTaskDTO } from 'src/task/dtos/moveTaskDTO';
+import { MoveColumnDTO } from 'src/column/dtos/moveColumnDTO';
+import { CreateColumnWSDTO } from 'src/column/dtos/createColumnWSDTO';
 
 @WebSocketGateway({
   namespace: 'boards',
@@ -54,5 +54,12 @@ export class WSGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
   taskDeleted(payload: { taskId: string; opId: string; clientTs: number }) {
     this.io.to(EVENTS.BOARD_JOIN).emit(EVENTS.TASK_DELETED, payload);
+  }
+
+  //Notifications
+  notify() {
+    this.io
+      .to(EVENTS.BOARD_JOIN)
+      .emit(EVENTS.NOTIFICATION, { message: 'Export successful' });
   }
 }

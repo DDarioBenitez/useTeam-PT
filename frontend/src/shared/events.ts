@@ -18,6 +18,9 @@ export const EVENTS = {
     COLUMN_DELETED: "column:deleted", // <- broadcast
     TASK_DELETE: "task:delete", // -> server
     TASK_DELETED: "task:deleted", // <- broadcast
+
+    //Notifications
+    NOTIFICATION: "notification", // <- broadcast
 } as const;
 
 export type MoveColumnPayload = {

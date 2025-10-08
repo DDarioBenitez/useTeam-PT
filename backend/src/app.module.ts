@@ -5,9 +5,10 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
-import { ColumnModule } from './columns/column.module';
-import { TaskModule } from './tasks/task.module';
+import { ColumnModule } from './column/column.module';
+import { TaskModule } from './task/task.module';
 import { WSModule } from './ws/ws.module';
+import { ExportsModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WSModule } from './ws/ws.module';
     ColumnModule,
     TaskModule,
     WSModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

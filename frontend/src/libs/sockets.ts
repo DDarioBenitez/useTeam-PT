@@ -1,8 +1,9 @@
 import { io, Socket } from "socket.io-client";
 import { EVENTS } from "../shared/events";
+import { VITE } from "./env";
 
-// 👉 tu namespace es "boards"  => cliente va a "/boards"
-const WS_URL = (import.meta as any).env?.VITE_WS_URL || "http://localhost:3000/boards";
+// mi namespace es "boards"  => cliente va a "/boards"
+const WS_URL = VITE.WS_URL ?? "http://localhost:3000/boards";
 console.log("[WS] connecting to:", WS_URL);
 
 export const socket: Socket = io(WS_URL, {
@@ -11,14 +12,14 @@ export const socket: Socket = io(WS_URL, {
     withCredentials: false,
 });
 
-type Pending = { event: string; payload: any; ack?: (response: any) => void };
+type Pending = { event: string; payload: unknown; ack?: (response: unknown) => void };
 const pending: Pending[] = [];
 
 socket.on("connect", () => {
     while (pending.length) {
         const { event, payload, ack } = pending.shift()!;
-        if (ack) socket.emit(event, payload, ack);
-        else socket.emit(event, payload);
+        if (ack) socket.emit(event, payload, ack as unknown as (...args: unknown[]) => void);
+        else socket.emit(event, payload as unknown as Record<string, unknown>);
     }
     console.log("[WS] connected!", socket.id);
 });

@@ -1,11 +1,12 @@
-import type { ColumnModel } from "../../types/types";
 import { fetcher } from "../api";
 
 export async function fetchColumns() {
     return await fetcher("/columns");
 }
 
-export async function createColumn(dto: ColumnModel) {
+// DTO used when creating a column from the client
+export type CreateColumnDTO = { title: string; color: string; opId?: string; clientTs?: number };
+export async function createColumn(dto: CreateColumnDTO) {
     return await fetcher("/columns", "POST", dto);
 }
 

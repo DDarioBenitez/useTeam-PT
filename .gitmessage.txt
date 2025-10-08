@@ -1,0 +1,42 @@
+feat(export,n8n): añadir flujo de exportación y webhook n8n + notificación websocket
+
+Se incorporan cambios para soportar la exportación de columnas y tareas, junto
+con un flujo (workflow) en n8n que automatiza la recolección, transformación
+y envío de datos, y notifica al frontend por websocket al completarse.
+
+Resumen de cambios
+  bajo `backend/src/export` y `backend/src/ws`) para generar y servir datos de
+  columnas/tareas y notificar al frontend.
+  (archivo `frontend/src/libs/sockets.ts`).
+  1) Webhook de entrada: recibe la petición que inicia el proceso.
+  2) HTTP Request (GET) -> columnas: obtiene las columnas del backend.
+  3) Set: transforma la respuesta de columnas y arma un JSON que será
+    usado por los nodos siguientes (mapea columnIds, nombres y orden).
+  4) HTTP Request (GET) -> tareas: consulta las tareas relacionadas.
+  5) Edit (Function / Set): construye objetos de tareas asignando a cada una
+     el id de columna correspondiente según el mapeo previo.
+  6) ConvertToCSV: convierte la colección resultante a un archivo CSV.
+  7) Send Email: envía el CSV por correo a los destinatarios configurados.
+  8) HTTP Request (POST): notifica al backend/servicio de websockets para que
+     éste emita un evento al frontend indicando que la exportación finalizó
+     correctamente.
+
+Motivación y notas de implementación
+  paso de transformación (Set) para garantizar que las tareas queden
+  correctamente asociadas a las columnas por id antes de convertir a CSV.
+  vez emite por websocket (o puede manejarse directamente desde n8n si se
+  expone el socket), para asegurar que el frontend reciba el evento de
+  finalización.
+
+Instrucciones para crear el commit localmente
+1. Revisa los cambios con `git status` y `git add` sobre los archivos que
+   corresponden.
+2. Crea el commit usando este mensaje (archivo .gitmessage.txt):
+
+   git commit -F .gitmessage.txt
+
+3. Empuja los cambios: `git push origin HEAD`.
+
+Notas finales
+  formato JSON/TS (export de n8n) o que actualice documentación adicional,
+  dime y lo agrego en otro commit.

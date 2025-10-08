@@ -88,7 +88,7 @@ export function moveTaskLocal<T extends { _id: string; columnId: string; index: 
         result = [...others, ...reindex(origin), ...reindex(dest)] as T[];
     }
 
-    // 🔒 Deduplicar por id (por si la lista venía “sucia” por drops previos)
+    //  Deduplicar por id (por si la lista venía “sucia” por drops previos)
     const seen = new Set<string>();
     result = result.filter((t) => {
         if (seen.has(t._id)) return false;

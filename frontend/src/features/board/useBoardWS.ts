@@ -92,9 +92,10 @@ export function useBoardWS(
         const opId = crypto.randomUUID();
         myOps.current.add(opId);
         // temp column uses opId as _id so server reply can replace it
-        setColumns((prev) => createColumnLocal(prev, { _id: opId, title, color, index: prev.length } as any));
+        setColumns((prev) => createColumnLocal(prev, { _id: opId, title, color, index: prev.length } as ColumnModel));
         try {
-            await createColumn({ title, color, opId, clientTs: Date.now() } as any);
+            // send minimal payload to API (server will assign final _id)
+            await createColumn({ title, color, opId, clientTs: Date.now() });
         } catch (e) {
             myOps.current.delete(opId);
             // remove temp
@@ -133,7 +134,7 @@ export function useBoardWS(
         const opId = crypto.randomUUID();
         myOps.current.add(opId);
         // temp task
-        setTasks((prev) => createTaskLocal(prev, { ...dto, _id: opId } as any));
+        setTasks((prev) => createTaskLocal(prev, { ...(dto as Omit<TaskModel, "_id">), _id: opId } as TaskModel));
         try {
             await createTask({ ...dto, opId, clientTs: Date.now() });
         } catch (e) {

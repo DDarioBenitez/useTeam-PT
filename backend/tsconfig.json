@@ -23,7 +23,8 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@shared/*": ["../shared/*"]
-    }
+    },
+    "types": ["node"]
   },
   "include": ["src", "../shared/**/*.ts"],
   "ts-node": { "files": true, "transpileOnly": true }

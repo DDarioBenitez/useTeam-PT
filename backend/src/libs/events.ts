@@ -18,4 +18,8 @@ export const EVENTS = {
   COLUMN_DELETED: 'column:deleted', // <- broadcast
   TASK_DELETE: 'task:delete', // -> server
   TASK_DELETED: 'task:deleted', // <- broadcast
+
+  //Notifications
+  NOTIFICATION: 'notification', // <- broadcast
+  NOTIFICATION_TRIGGERED: 'notification:triggered', // -> server
 } as const;

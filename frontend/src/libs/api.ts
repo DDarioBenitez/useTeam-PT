@@ -1,7 +1,8 @@
 export type FetchMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 
 /** Base de la API (solo Vite) */
-export const apiurl: string = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3000";
+import { VITE } from "./env";
+export const apiurl: string = VITE.API_URL ?? "http://localhost:3000";
 
 export async function fetcher<T = unknown>(
     url: string,
