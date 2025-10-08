@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-    mongodb:
+    mongo:
         image: mongo:7.0
         container_name: useTeam-mongodb
         command: ["--replSet", "rs0", "--bind_ip_all"]
@@ -33,4 +33,47 @@ services:
                 ' || true
         restart: "no"
 
-volumes: {}
+    backend:
+        image: node:20-bullseye-slim
+        working_dir: /usr/src/app
+        volumes:
+            - ./backend:/usr/src/app:cached
+            - backend_node_modules:/usr/src/app/node_modules
+        command: bash -lc "npm install --silent && npm run start:dev"
+        depends_on:
+            - mongo
+            - mongo-rs-init
+        environment:
+            MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/kanban-board}
+            PORT: "3000"
+            N8N_EXPORT_WEBHOOK_URL: http://n8n:5678/webhook/kanban-export
+            BACKEND_BASE_URL: http://backend:3000
+        ports:
+            - "3000:3000"
+
+    frontend:
+        image: node:20-bullseye-slim
+        working_dir: /usr/src/app
+        volumes:
+            - ./frontend:/usr/src/app:cached
+            - frontend_node_modules:/usr/src/app/node_modules
+        command: bash -lc "npm install --silent && npm run dev -- --host 0.0.0.0 --port 5173"
+        ports:
+            - "5173:5173"
+        environment:
+            VITE_API_URL: ${VITE_API_URL:-http://backend:3000}
+            VITE_WS_URL: ${VITE_WS_URL:-ws://backend:3000/boards}
+
+    n8n:
+        image: n8nio/n8n:latest
+        ports:
+            - "5678:5678"
+        environment:
+            N8N_BASIC_AUTH_ACTIVE: "false"
+        volumes:
+            - ./n8n:/home/node/.n8n
+
+volumes:
+    mongo-data:
+    backend_node_modules:
+    frontend_node_modules:

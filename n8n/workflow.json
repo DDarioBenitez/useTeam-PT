@@ -1,0 +1,118 @@
+{
+    "name": "Export backlog to CSV and email",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "kanban-export",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "name": "Entrada",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [250, 300]
+        },
+        {
+            "parameters": {
+                "requestMethod": "GET",
+                "url": "={{$json.body.backendBaseUrl}}/columns",
+                "responseFormat": "json"
+            },
+            "name": "Get Columns",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [450, 200]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "boolean": [],
+                    "number": [],
+                    "string": [
+                        {
+                            "name": "columnsMap",
+                            "value": "={{ JSON.stringify($node['Get Columns'].json) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Set Columns Map",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [650, 200]
+        },
+        {
+            "parameters": {
+                "requestMethod": "GET",
+                "url": "={{($node[\"Entrada\"].json.body?.backendBaseUrl) + '/tasks/all'}}",
+                "responseFormat": "json"
+            },
+            "name": "Get Tasks",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [850, 200]
+        },
+        {
+            "parameters": {
+                "functionCode": "// map tasks to include column id/name from columnsMap\nconst columns = JSON.parse($node['Set Columns Map'].json.columnsMap || '[]');\nconst byId = {};\nfor (const c of columns) { byId[c._id || c.id] = c; }\nreturn items.map(item => { const t = item.json; const col = byId[t.column] || null; return { json: { _id: t._id || t.id, title: t.title, description: t.description, column: col ? (col.name || col.title) : (t.column || null), createdAt: t.createdAt || new Date().toISOString() } }; });"
+            },
+            "name": "Map Tasks",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [1050, 200]
+        },
+        {
+            "parameters": {
+                "binaryData": false,
+                "options": {}
+            },
+            "name": "Convert to CSV",
+            "type": "n8n-nodes-base.csvFile",
+            "typeVersion": 1,
+            "position": [1250, 200]
+        },
+        {
+            "parameters": {
+                "fromEmail": "noreply@yourdomain.com",
+                "toEmail": "={{$node[\"Entrada\"].json.body?.email}}",
+                "subject": "Exportación de Backlog",
+                "text": "Adjunto encontrarás el CSV exportado del backlog.",
+                "attachmentsUi": {
+                    "attachmentsValues": [
+                        {
+                            "binaryPropertyName": "data",
+                            "fileName": "backlog.csv"
+                        }
+                    ]
+                }
+            },
+            "name": "Send Email",
+            "type": "n8n-nodes-base.sendEmail",
+            "typeVersion": 1,
+            "position": [1450, 200]
+        },
+        {
+            "parameters": {
+                "requestMethod": "POST",
+                "url": "={{($node[\"Entrada\"].json.body?.backendBaseUrl) + '/export/notify'}}",
+                "jsonParameters": true,
+                "options": {}
+            },
+            "name": "Notify Backend",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [1650, 200]
+        }
+    ],
+    "connections": {
+        "Webhook": { "main": [[{ "node": "Get Columns", "type": "main", "index": 0 }]] },
+        "Get Columns": { "main": [[{ "node": "Set Columns Map", "type": "main", "index": 0 }]] },
+        "Set Columns Map": { "main": [[{ "node": "Get Tasks", "type": "main", "index": 0 }]] },
+        "Get Tasks": { "main": [[{ "node": "Map Tasks", "type": "main", "index": 0 }]] },
+        "Map Tasks": { "main": [[{ "node": "Convert to CSV", "type": "main", "index": 0 }]] },
+        "Convert to CSV": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] },
+        "Send Email": { "main": [[{ "node": "Notify Backend", "type": "main", "index": 0 }]] }
+    }
+}
